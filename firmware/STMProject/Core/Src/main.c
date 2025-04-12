@@ -18,8 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "newhaven_slim_oled.h"
-#include "NHD_2066.h"
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -41,6 +40,7 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+ADC_HandleTypeDef hadc1;
 
 /* USER CODE BEGIN PV */
 
@@ -49,13 +49,15 @@
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_ADC1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+// Declare a global variable to track the last tick
+uint32_t previousTick = 0;
 /* USER CODE END 0 */
 
 /**
@@ -87,69 +89,63 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
 
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_10);
-  /* USER CODE END 2 */
-
-
-  /*
-   * Set the reset to be high set
-   * set the cs to be reset
-   */
+  // OLED Display
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
-//  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_8); // set the solenoid valve as closed on power on
-  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9); // set the solenoid valve as closed on power on
+  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_8); // set the solenoid valve as closed on power on
   NHD_OLED_begin();
   NHD_OLED_textClear();
   NHD_OLED_cursorHome();
   char* message = "Water Blaster";
   uint8_t length = 13;
   NHD_OLED_print_len(message, length);
-  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_11);
 
+
+  /* USER CODE END 2 */
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-
-////  NHD_OLED_displayOn();
-
-  while (1==1)
+  while (1)
   {
+    /* USER CODE END WHILE */
+	  // HAL_Delay(500);
+	  // HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9);
+	  // HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_10);
+	  // HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
+    /* USER CODE BEGIN 3 */
+    if (HAL_GetTick() - previousTick >= 1000) // 1000 ms = 1 second
+    {
+      HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_10); // Toggle the pin
+      previousTick = HAL_GetTick();           // Update the last tick
+    }
 
-	if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_6) == GPIO_PIN_RESET)
-	{
-	  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9);
-	  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_8);
-	  HAL_Delay(50);
-	  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_8);
-	  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9);
-	}
-	if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_RESET)
-	{
-	  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_2);
-	  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
-	  HAL_Delay(50);
-	  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_2);
-	  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
-	}
-	if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) == GPIO_PIN_RESET)
-	{
-	  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9);
-	  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_8);
-	  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_2);
-	  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
-	  HAL_Delay(50);
-	  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_2);
-	  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
-	  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_8);
-	  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9);
-	}
-	}
+    // Trigger (PA11) to control valve (PA8)
+    if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_11) == GPIO_PIN_RESET)
+    {
+      HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9); // LED 1
+      HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_8);
+      HAL_Delay(50);
+      HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_8);
+      HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9);
+    }
+    // Filler (PA1) to control pump (PB2)
+    if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) == GPIO_PIN_RESET)
+    {
+      HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_2);
+      HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6); // LED 2
+      HAL_Delay(50);
+      HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_2);
+      HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
+    }
+  }
+
+
+  
   /* USER CODE END 3 */
 }
 
@@ -194,6 +190,65 @@ void SystemClock_Config(void)
 }
 
 /**
+  * @brief ADC1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ADC1_Init(void)
+{
+
+  /* USER CODE BEGIN ADC1_Init 0 */
+
+  /* USER CODE END ADC1_Init 0 */
+
+  ADC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN ADC1_Init 1 */
+
+  /* USER CODE END ADC1_Init 1 */
+
+  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
+  */
+  hadc1.Instance = ADC1;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
+  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  hadc1.Init.LowPowerAutoWait = DISABLE;
+  hadc1.Init.LowPowerAutoPowerOff = DISABLE;
+  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.NbrOfConversion = 1;
+  hadc1.Init.DiscontinuousConvMode = DISABLE;
+  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc1.Init.DMAContinuousRequests = DISABLE;
+  hadc1.Init.Overrun = ADC_OVR_DATA_PRESERVED;
+  hadc1.Init.SamplingTimeCommon1 = ADC_SAMPLETIME_1CYCLE_5;
+  hadc1.Init.SamplingTimeCommon2 = ADC_SAMPLETIME_1CYCLE_5;
+  hadc1.Init.OversamplingMode = DISABLE;
+  hadc1.Init.TriggerFrequencyMode = ADC_TRIGGER_FREQ_HIGH;
+  if (HAL_ADC_Init(&hadc1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Regular Channel
+  */
+  sConfig.Channel = ADC_CHANNEL_0;
+  sConfig.Rank = ADC_REGULAR_RANK_1;
+  sConfig.SamplingTime = ADC_SAMPLINGTIME_COMMON_1;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ADC1_Init 2 */
+
+  /* USER CODE END ADC1_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -206,13 +261,13 @@ static void MX_GPIO_Init(void)
   /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9
-                          |GPIO_PIN_10|GPIO_PIN_11, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_8|GPIO_PIN_9
+                          |GPIO_PIN_10|GPIO_PIN_12, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2, GPIO_PIN_RESET);
@@ -220,16 +275,32 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : PA0 PA1 PA6 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_6;
+  /*Configure GPIO pins : PB9 PB3 PB4 PB5
+                           PB6 PB7 PB8 */
+  GPIO_InitStruct.Pin = GPIO_PIN_9|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5
+                          |GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PC14 PC15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_14|GPIO_PIN_15;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PA1 PA2 PA3 PA4
+                           PA7 PA11 PA15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4
+                          |GPIO_PIN_7|GPIO_PIN_11|GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA5 PA7 PA8 PA9
-                           PA10 PA11 */
-  GPIO_InitStruct.Pin = GPIO_PIN_5|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9
-                          |GPIO_PIN_10|GPIO_PIN_11;
+  /*Configure GPIO pins : PA5 PA6 PA8 PA9
+                           PA10 PA12 */
+  GPIO_InitStruct.Pin = GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_8|GPIO_PIN_9
+                          |GPIO_PIN_10|GPIO_PIN_12;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -248,12 +319,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PB6 PB7 PB8 */
-  GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
